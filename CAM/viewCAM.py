@@ -30,6 +30,7 @@ if __name__ == '__main__':
         print(time.time()-startTime)
         
         bestProb = prob.argmax()
+        bestProb = 0
         wProb = weights[:,bestProb]
         print(prob)
         
