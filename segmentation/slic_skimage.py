@@ -60,7 +60,12 @@ if __name__ == "__main__":
                 # construct a mask for the segment
                 mask = np.zeros(image.shape[:2], dtype="uint8")
                 mask[segments == segVal] = 255
+
+                contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                x, y, w, h = cv2.boundingRect(contours[0])
+                mask = mask[y:y+h, x:x+w]
+                image_crop = image[y:y+h, x:x+w]
              
                 # show the masked region
-                cv2.imwrite("./segmented/{}/{}_{}.jpg".format(basename, numSegments, i), cv2.bitwise_and(image, image,
-                                                                                                         mask=mask))
+                cv2.imwrite("./segmented/{}/{}_{}.jpg".format(basename, numSegments, i),
+                            cv2.bitwise_and(image_crop, image_crop, mask=mask))
