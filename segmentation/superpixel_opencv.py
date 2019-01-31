@@ -16,6 +16,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", required=True, help="Path to the image or folder")
 args = vars(ap.parse_args())
 
+REGION_SIZE = 50
 if __name__ == "__main__":
     slic_types = {0: cv2.ximgproc.SLIC, 1: cv2.ximgproc.SLICO, 2: cv2.ximgproc.MSLIC}
     while True:
@@ -51,10 +52,10 @@ if __name__ == "__main__":
         blured = cv2.GaussianBlur(image, (3, 3), 0)
         cieLab = cv2.cvtColor(blured, cv2.COLOR_BGR2Lab)
         if algorithm_type <= 2:
-            super_pixel = cv2.ximgproc.createSuperpixelSLIC(cieLab, algorithm=slic_types[algorithm_type], region_size=50,
-                                                            ruler=10.0)
+            super_pixel = cv2.ximgproc.createSuperpixelSLIC(cieLab, algorithm=slic_types[algorithm_type],
+                                                            region_size=REGION_SIZE, ruler=10.0)
         elif algorithm_type == 3:
-            super_pixel = cv2.ximgproc.createSuperpixelLSC(cieLab, region_size=50, ratio=0.075)
+            super_pixel = cv2.ximgproc.createSuperpixelLSC(cieLab, region_size=REGION_SIZE, ratio=0.075)
 
         super_pixels_qty = super_pixel.getNumberOfSuperpixels()
         super_pixel.iterate(num_iterations=10)
@@ -71,4 +72,14 @@ if __name__ == "__main__":
             ymin = min(y)
             ymax = max(y)
             image_crop = image_crop[ymin:ymax, xmin: xmax]
-            cv2.imwrite("./segmented/{}/{}.jpg".format(basename, i), image_crop)
+            cv2.imwrite("./segmented/{}/{}_{}.jpg".format(basename, i, REGION_SIZE), image_crop)
+
+        # stitch foreground & background together
+        mask = super_pixel.getLabelContourMask(False)
+        color_img = np.zeros(image.shape, np.uint8)
+        color_img[:] = (0, 0, 255)
+        mask_inv = cv2.bitwise_not(mask)
+        result_bg = cv2.bitwise_and(image, image, mask=mask_inv)
+        result_fg = cv2.bitwise_and(color_img, color_img, mask=mask)
+        result = cv2.add(result_bg, result_fg)
+        cv2.imwrite("./segmented/{}/{}_{}_debug.jpg".format(basename, REGION_SIZE, basename), result)
