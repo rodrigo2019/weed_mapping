@@ -17,6 +17,19 @@ ap.add_argument("-i", "--input", required=True, help="Path to the image or folde
 args = vars(ap.parse_args())
 
 if __name__ == "__main__":
+    slic_types = {0: cv2.ximgproc.SLIC, 1: cv2.ximgproc.SLICO, 2: cv2.ximgproc.MSLIC}
+    while True:
+        algorithm_type = input("Which algorithm?\n"
+                              "[0] SLIC\n"
+                              "[1] SLICO\n"
+                              "[2] MSLIC (broken)\n"
+                              "[3] LSC\n")
+        algorithm_type = int(algorithm_type)
+        if algorithm_type < 0 or algorithm_type > 3:
+            print("Choose between 0 and 3")
+        else:
+            break
+
     if os.path.isdir(args["input"]):
         images_path = list(paths.list_images(args["input"]))
     else:
@@ -37,7 +50,12 @@ if __name__ == "__main__":
         image = cv2.imread(fname)
         blured = cv2.GaussianBlur(image, (3, 3), 0)
         cieLab = cv2.cvtColor(blured, cv2.COLOR_BGR2Lab)
-        super_pixel = cv2.ximgproc.createSuperpixelLSC(cieLab, region_size=50)
+        if algorithm_type <= 2:
+            super_pixel = cv2.ximgproc.createSuperpixelSLIC(cieLab, algorithm=slic_types[algorithm_type], region_size=50,
+                                                            ruler=10.0)
+        elif algorithm_type == 3:
+            super_pixel = cv2.ximgproc.createSuperpixelLSC(cieLab, region_size=50, ratio=0.075)
+
         super_pixels_qty = super_pixel.getNumberOfSuperpixels()
         super_pixel.iterate(num_iterations=10)
         labels = super_pixel.getLabels()
