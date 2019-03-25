@@ -19,7 +19,7 @@ import os
 import json
 
 # configurações da rede
-prefix = "weed_cam"  # nome para salvar
+prefix = "trained_models/weed_cam"  # nome para salvar
 epochs = 10000
 batchSize = 32
 width = 256
@@ -88,11 +88,25 @@ with open("classIndicesVal.txt", "w") as file:
     print("indice de classes data validação:\n", valGenerator.class_indices)
     file.write(json.dumps(valGenerator.class_indices))
 
+
 # callbacks
+class ModelCheckPointEpochIndex(ModelCheckpoint):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orignal_filepath = self.filepath
+
+    def on_epoch_end(self, epoch, logs=None):
+        filepath, ext = os.path.splitext(self.orignal_filepath)
+        self.filepath = "{}_{}{}".format(filepath, epoch+1, ext)
+        super().on_epoch_end(epoch, logs)
+
+
 checkPointSaverBest = ModelCheckpoint(prefix+"_bestacc.hdf5", monitor='val_acc', verbose=1,
                                       save_best_only=True, save_weights_only=False, mode='auto', period=1)
-checkPointSaver = ModelCheckpoint(prefix + "_ckp.hdf5", verbose=1,
-                                  save_best_only=False, save_weights_only=False, period=10)
+checkPointSaverBestloss = ModelCheckpoint(prefix+"_bestlosshdf5", monitor='val_loss', verbose=1, save_best_only=True,
+                                          save_weights_only=False, mode='auto', period=1)
+checkPointSaver = ModelCheckPointEpochIndex(prefix + "_ckp.hdf5", verbose=1, save_best_only=False,
+                                            save_weights_only=False, period=10)
 
 tb = TensorBoard(log_dir='logsTB', histogram_freq=0, batch_size=batchSize, write_graph=True,
                  write_grads=False, write_images=False, embeddings_freq=0, embeddings_layer_names=None,
@@ -112,8 +126,8 @@ model.fit_generator(
     steps_per_epoch=len(imagesTrainPaths) // batchSize,
     epochs=epochs,
     validation_data=valGenerator,
-    validation_steps=len(imagesValPaths) // batchSize,
-    callbacks=[checkPointSaverBest, checkPointSaver, tb],
+    validation_steps=len(imagesValPaths),
+    callbacks=[checkPointSaverBest, checkPointSaver, checkPointSaverBestloss, tb],
     workers=8,
     max_queue_size=40)
 
