@@ -90,23 +90,12 @@ with open("classIndicesVal.txt", "w") as file:
 
 
 # callbacks
-class ModelCheckPointEpochIndex(ModelCheckpoint):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orignal_filepath = self.filepath
-
-    def on_epoch_end(self, epoch, logs=None):
-        filepath, ext = os.path.splitext(self.orignal_filepath)
-        self.filepath = "{}_{}{}".format(filepath, epoch+1, ext)
-        super().on_epoch_end(epoch, logs)
-
-
 checkPointSaverBest = ModelCheckpoint(prefix+"_bestacc.hdf5", monitor='val_acc', verbose=1,
                                       save_best_only=True, save_weights_only=False, mode='auto', period=1)
-checkPointSaverBestloss = ModelCheckpoint(prefix+"_bestlosshdf5", monitor='val_loss', verbose=1, save_best_only=True,
+checkPointSaverBestloss = ModelCheckpoint(prefix+"_bestloss.hdf5", monitor='val_loss', verbose=1, save_best_only=True,
                                           save_weights_only=False, mode='auto', period=1)
-checkPointSaver = ModelCheckPointEpochIndex(prefix + "_ckp.hdf5", verbose=1, save_best_only=False,
-                                            save_weights_only=False, period=10)
+checkPointSaver = ModelCheckpoint(prefix + "_ckp_{epoch}.hdf5", verbose=1, save_best_only=False,
+                                  save_weights_only=False, period=10)
 
 tb = TensorBoard(log_dir='logsTB', histogram_freq=0, batch_size=batchSize, write_graph=True,
                  write_grads=False, write_images=False, embeddings_freq=0, embeddings_layer_names=None,
